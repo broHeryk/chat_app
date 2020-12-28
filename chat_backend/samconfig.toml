@@ -8,3 +8,4 @@ s3_prefix = "socket"
 region = "us-east-2"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
+parameter_overrides = "TableName=\"connection_table\""

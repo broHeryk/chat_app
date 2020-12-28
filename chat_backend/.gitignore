@@ -151,7 +151,7 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
-.pytest_cache/
+socket/.pytest_cache/
 nosetests.xml
 coverage.xml
 *.cover
@@ -239,6 +239,6 @@ $RECYCLE.BIN/
 
 # Build folder
 
-*/build/*
+.aws-sam/build/__init__.py
 
 # End of https://www.gitignore.io/api/osx,linux,python,windows,pycharm,visualstudiocode

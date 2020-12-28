@@ -6,6 +6,6 @@ codeuri = "connect/"
 runtime = "python3.7"
 source_md5 = ""
 packagetype = "Zip"
-functions = ["ConnectFunction"]
+functions = ["OnConnectFunction", "OnDisconnectFunction", "SendMessageFunction"]
 
 [layer_build_definitions]
