@@ -1,5 +1,6 @@
 import os
-from chat_backend.connect.app import connect, dynamodb
+from ws_connection.utils import dynamodb
+from ws_connection.app import connect_manager
 from unittest import mock
 from chat_backend.tests.unit.test_data import web_socket_connect_event as ws_conn_ev
 import unittest
@@ -8,14 +9,14 @@ import unittest
 @mock.patch.dict(os.environ, {"TABLE_NAME": "testtable"})
 class TestWSConnection(unittest.TestCase):
 
-    @mock.patch('chat_backend.connect.app.dynamodb.Table')
+    @mock.patch('ws_connection.utils.dynamodb.Table')
     def test_connection_successful(self, dynamo_mock):
         # Given: Api Gateway even with connection Id
         conn_id = ws_conn_ev["requestContext"].get("connectionId")
         # Given: Table name is passed to environment variables
         table_name = os.environ.get('TABLE_NAME')
         # When: connect function is called with a valid event
-        response = connect(ws_conn_ev, "")
+        response = connect_manager(ws_conn_ev, "")
         # Then: 200 is returned
         self.assertEqual(response['statusCode'], 200)
         # Then: Dynamo resource is called to pull table with correct table name
@@ -29,17 +30,17 @@ class TestWSConnection(unittest.TestCase):
         # Given: Api Gateway even with empty connection Id
         assert not ws_conn_ev["requestContext"].get("connectionId")
         # When: connect function is called with a valid event
-        response = connect(ws_conn_ev, "")
+        response = connect_manager(ws_conn_ev, "")
         # Then: 500 is returned due to missing connection id
         self.assertEqual(response['statusCode'], 500)
         self.assertEqual(response['body'], 'connectionId value must not be empty or missing')
 
-    @mock.patch.dict(ws_conn_ev, {"requestContext": {"connectionId": None, "eventType": "Un"}})
+    @mock.patch.dict(ws_conn_ev, {"requestContext": {"connectionId": 'ASD', "eventType": "Unknown"}})
     def test_connection_with_unknown_connect_type(self):
-        # Given: Api Gateway even with empty connection Id
-        assert not ws_conn_ev["requestContext"].get("connectionId")
+        # Given: Api Gateway even with unknown event type
+        assert  ws_conn_ev["requestContext"]['eventType'] not in ['CONNECT', 'DISCONNECT']
         # When: connect function is called with a valid event
-        response = connect(ws_conn_ev, "")
+        response = connect_manager(ws_conn_ev, "")
         # Then: 500 is returned due to missing connection id
         self.assertEqual(response['statusCode'], 500)
         self.assertEqual(response['body'], 'Unrecognized eventType. CONNECT and DISCONNECT are only available.')

@@ -152,7 +152,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: connect/
-      Handler: app.connect
+      Handler: app.connect_manager
       MemorySize: 128
       Runtime: python3.7
       Environment:
