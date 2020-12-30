@@ -130,7 +130,7 @@ Resources:
   OnConnectFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: connect/
+      CodeUri: ws_connection/
       Handler: app.connection_manager
       MemorySize: 128
       Runtime: python3.7
@@ -151,7 +151,7 @@ Resources:
   OnDisconnectFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: connect/
+      CodeUri: ws_connection/
       Handler: app.connect_manager
       MemorySize: 128
       Runtime: python3.7
@@ -172,7 +172,7 @@ Resources:
   SendMessageFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: connect/
+      CodeUri: ws_connection/
       Handler: app.send_message
       MemorySize: 128
       Runtime: python3.7
