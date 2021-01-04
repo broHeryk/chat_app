@@ -8,4 +8,26 @@ s3_prefix = "socket"
 region = "us-east-2"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
+parameter_overrides = "ConncectionTableName=\"chat_connections\" MessageTableName=\"chat_messagess\""
+
+[dev]
+[dev.deploy]
+[dev.deploy.parameters]
+stack_name = "socket"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1641aw0up66mw"
+s3_prefix = "socket"
+region = "us-east-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
 parameter_overrides = "TableName=\"connection_table\""
+
+[qa]
+[qa.deploy]
+[qa.deploy.parameters]
+stack_name = "socket"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1641aw0up66mw"
+s3_prefix = "socket"
+region = "us-east-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "ConncectionTableName=\"chat_connections\" MessageTableName=\"chat_messagess\""

@@ -1,4 +1,4 @@
-from utils import get_connection_table, get_response
+from utils import get_connection_table, build_response
 
 
 def connect(connection_id, logger):
@@ -7,7 +7,7 @@ def connect(connection_id, logger):
     # Add connectionID to the database
     table = get_connection_table()
     table.put_item(Item={"connectionId": connection_id})
-    return get_response(200, "Connect successful.")
+    return build_response(200, "Connect successful.")
 
 
 def disconnect(connection_id, logger):
@@ -16,7 +16,7 @@ def disconnect(connection_id, logger):
     # Remove the connectionID from the database
     table = get_connection_table()
     table.delete_item(Key={"connectionId": connection_id})
-    return get_response(200, "Disconnect successful.")
+    return build_response(200, "Disconnect successful.")
 
 
 handler_map = {

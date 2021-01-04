@@ -6,6 +6,13 @@ codeuri = "ws_connection/"
 runtime = "python3.7"
 source_md5 = ""
 packagetype = "Zip"
-functions = ["OnConnectFunction", "OnDisconnectFunction", "SendMessageFunction"]
+functions = ["ConnectionManagerFunction"]
+
+[function_build_definitions.83a72f5d-99db-43fd-9736-c52f7d40b5ba]
+codeuri = "message/"
+runtime = "python3.7"
+source_md5 = ""
+packagetype = "Zip"
+functions = ["SendMessageFunction"]
 
 [layer_build_definitions]

@@ -5,31 +5,23 @@ Description: >
   SAM Template for simple-websockets-chat-app that has the DynamoDB table and Lambda
   functions needed to demonstrate the Websocket protocol on API Gateway.
 Parameters:
-  TableName:
+  ConncectionTableName:
     Type: String
-    Default: 'simplechat_connections'
+    Default: 'chat_connections'
     Description: (Required) The name of the new DynamoDB to store connection identifiers for each connected clients. Minimum 3 characters
     MinLength: 3
     MaxLength: 50
     AllowedPattern: ^[A-Za-z_]+$
     ConstraintDescription: 'Required. Can be characters and underscore only. No numbers or special characters allowed.'
-
+  MessageTableName:
+    Type: String
+    Default: 'chat_messages'
+    Description: (Required) The name of the new DynamoDB to store messages.
+    MinLength: 3
+    MaxLength: 50
+    AllowedPattern: ^[A-Za-z_]+$
+    ConstraintDescription: 'Required. Can be characters and underscore only. No numbers or special characters allowed.'
 Resources:
-  ConnectionsTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      AttributeDefinitions:
-      - AttributeName: "connectionId"
-        AttributeType: "S"
-      KeySchema:
-      - AttributeName: "connectionId"
-        KeyType: "HASH"
-      ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
-      SSESpecification:
-        SSEEnabled: True
-      TableName: !Ref TableName
 
   SimpleChatWebSocket:
     Type: AWS::ApiGatewayV2::Api
@@ -56,7 +48,7 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri:
         Fn::Sub:
-            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnConnectFunction.Arn}/invocations
+            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConnectionManagerFunction.Arn}/invocations
   DisconnectRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
@@ -76,7 +68,7 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri:
         Fn::Sub:
-            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnDisconnectFunction.Arn}/invocations
+            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConnectionManagerFunction.Arn}/invocations
   SendRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
@@ -108,8 +100,8 @@ Resources:
   Stage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
-      StageName: Prod
-      Description: Prod Stage
+      StageName: dev
+      Description: dev Stage
       DeploymentId: !Ref Deployment
       ApiId: !Ref SimpleChatWebSocket
   ConnectionsTable:
@@ -126,8 +118,27 @@ Resources:
         WriteCapacityUnits: 5
       SSESpecification:
         SSEEnabled: True
-      TableName: !Ref TableName
-  OnConnectFunction:
+      TableName: !Ref ConncectionTableName
+  MessagesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "room"
+          AttributeType: "S"
+        - AttributeName: "index"
+          AttributeType: "N"
+      KeySchema:
+        - AttributeName: "room"
+          KeyType: "HASH"
+        - AttributeName: "index"
+          KeyType: "RANGE"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      SSESpecification:
+        SSEEnabled: True
+      TableName: !Ref MessageTableName
+  ConnectionManagerFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ws_connection/
@@ -136,52 +147,34 @@ Resources:
       Runtime: python3.7
       Environment:
         Variables:
-          TABLE_NAME: !Ref TableName
+          CONNECTION_TABLE_NAME: !Ref ConncectionTableName
       Policies:
       - DynamoDBCrudPolicy:
-          TableName: !Ref TableName
+          TableName: !Ref ConncectionTableName
   OnConnectPermission:
     Type: AWS::Lambda::Permission
     DependsOn:
       - SimpleChatWebSocket
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Ref OnConnectFunction
-      Principal: apigateway.amazonaws.com
-  OnDisconnectFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ws_connection/
-      Handler: app.connect_manager
-      MemorySize: 128
-      Runtime: python3.7
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref TableName
-      Policies:
-      - DynamoDBCrudPolicy:
-          TableName: !Ref TableName
-  OnDisconnectPermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-      - SimpleChatWebSocket
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref OnDisconnectFunction
+      FunctionName: !Ref ConnectionManagerFunction
       Principal: apigateway.amazonaws.com
   SendMessageFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ws_connection/
+      CodeUri: message/
       Handler: app.send_message
       MemorySize: 128
       Runtime: python3.7
       Environment:
         Variables:
-          TABLE_NAME: !Ref TableName
+          CONNECTION_TABLE_NAME: !Ref ConncectionTableName
+          MESSAGE_TABLE_NAME: !Ref MessageTableName
       Policies:
       - DynamoDBCrudPolicy:
-          TableName: !Ref TableName
+          TableName: !Ref ConncectionTableName
+      - DynamoDBCrudPolicy:
+          TableName: !Ref MessageTableName
       - Statement:
         - Effect: Allow
           Action:
@@ -202,13 +195,9 @@ Outputs:
     Description: "Connections table ARN"
     Value: !GetAtt ConnectionsTable.Arn
 
-  OnConnectFunctionArn:
+  ConnectionManagerFunctionArn:
     Description: "OnConnect function ARN"
-    Value: !GetAtt OnConnectFunction.Arn
-
-  OnDisconnectFunctionArn:
-    Description: "OnDisconnect function ARN"
-    Value: !GetAtt OnDisconnectFunction.Arn
+    Value: !GetAtt ConnectionManagerFunction.Arn
 
   SendMessageFunctionArn:
     Description: "SendMessage function ARN"
