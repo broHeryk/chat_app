@@ -1,6 +1,7 @@
 import logging
-import time
-from utils import build_response, send_to_connection, get_message_table, get_body, get_connection_table
+from utils import (build_response, send_to_connection,
+    get_message_table, get_body, build_message_index, put_message_to_db, broadcast_message,
+                   validate_event, validate_body)
 
 logger = logging.getLogger("handler_logger")
 logger.setLevel(logging.DEBUG)
@@ -53,12 +54,20 @@ def send_message(event, context):
     and forward it to all connections if successful.
     """
     logger.info('Message sent on WebSocket.')
-
     # Ensure all required fields were provided
-    body = get_body(event, logger)
-    if not isinstance(body, dict):
-        logger.debug('Failed: message body not in dict format.')
-        return build_response(400, 'Message body not in dict format.')
+    try:
+        validate_event(event)
+        body = get_body(event)
+        validate_body(body)
+    except ValueError as v_er:
+        return build_response(400, f'Event or body are not in correct shape or format:({v_er})')
+
+    # Todo: fix hardcode once username is known
+    username = 'Mate'
+    put_message_to_db(username, body)
+    logger.debug('Broadcasting message: {}'.format(body['content']))
+    return broadcast_message(username, body, event)
+
     # for attribute in ['token', 'content']:
     #     if attribute not in body:
     #         logger.debug('Failed: '{}' not in message dict.' \
@@ -74,40 +83,3 @@ def send_message(event, context):
     # except:
     #     logger.debug("Failed: Token verification failed.")
     #     return build_response(400, "Token verification failed.")
-
-    # Get the next message index
-    # (Note: there is technically a race condition where two
-    # users post at the same time and use the same index, but
-    # accounting for that is outside the scope of this project)
-    message_table = get_message_table()
-    response = message_table.query(KeyConditionExpression='room = :room',
-                                   ExpressionAttributeValues={':room': 'general'},
-                                   Limit=1, ScanIndexForward=False)
-    items = response.get('Items', [])
-    print(items)
-    index = items[0]['index'] + 1 if len(items) > 0 else 0
-    # Todo: fix hardcode once username is known
-    username = 'Mate'
-    # Add the new message to the database
-    timestamp = int(time.time())
-    content = body['content']
-    message_table.put_item(Item={'room': 'general', 'index': index,
-                                 'timestamp': timestamp, 'username': username,
-                                 'content': content})
-
-    # Get all current connections
-    table = get_connection_table()
-    response = table.scan(ProjectionExpression='connectionId')
-    items = response.get('Items', [])
-    connections = [x['connectionId'] for x in items if 'connectionId' in x]
-
-    # Send the message data to all connections
-    message = {'username': username, 'content': content}
-    logger.debug('Broadcasting message: {}'.format(message))
-    data = {'messages': [message]}
-    for connectionID in connections:
-        send_to_connection(connectionID, data, event)
-    return build_response(200,
-                          'Message sent to {} connections.'.format(len(connections)))
-
-
