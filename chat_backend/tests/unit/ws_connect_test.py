@@ -1,7 +1,7 @@
 import os
-from ws_connection.app import connection_manager
+from chat_backend.ws_connection.app import connection_manager
 from unittest import mock
-from chat_backend.tests.unit.test_data import web_socket_connect_event as ws_conn_ev
+from chat_backend.tests.unit.test_data import username_data, web_socket_connect_event as ws_conn_ev
 import unittest
 
 
@@ -9,6 +9,7 @@ import unittest
 class TestWSConnection(unittest.TestCase):
 
     @mock.patch('utils.dynamodb.Table')
+    @mock.patch('uuid.uuid1', lambda: '42')
     def test_connection_successful(self, dynamo_mock):
         # Given: Api Gateway event with connection Id
         conn_id = ws_conn_ev["requestContext"].get("connectionId")
@@ -22,7 +23,25 @@ class TestWSConnection(unittest.TestCase):
         dynamo_mock.assert_called_once_with(table_name)
         target_table = dynamo_mock.return_value
         # Then: The correct value of connection id is put to the table
-        target_table.put_item.assert_called_once_with(**{'Item': {'connectionId': conn_id}})
+        target_table.put_item.assert_called_once_with(**{'Item': {'connectionId': conn_id, 'username': 'user_42'}})
+
+    @mock.patch.dict(ws_conn_ev, username_data)
+    @mock.patch('utils.dynamodb.Table')
+    def test_connection_with_username_passed(self, dynamo_mock):
+        # Given: Api Gateway event with connection Id and username as query param
+        conn_id = ws_conn_ev["requestContext"].get("connectionId")
+        username = ws_conn_ev["queryStringParameters"].get("username")
+        # Given: Table name is passed to environment variables
+        table_name = os.environ.get('CONNECTION_TABLE_NAME')
+        # When: connect function is called with a valid event
+        response = connection_manager(ws_conn_ev, "")
+        # Then: 200 is returned
+        self.assertEqual(response['statusCode'], 200)
+        # Then: Dynamo resource is called to pull table with correct table name
+        dynamo_mock.assert_called_once_with(table_name)
+        target_table = dynamo_mock.return_value
+        # Then: The correct value of connection id is put to the table
+        target_table.put_item.assert_called_once_with(**{'Item': {'connectionId': conn_id, 'username': username}})
 
     @mock.patch.dict(ws_conn_ev, {"requestContext": {"connectionId": None, "eventType": "CONNECT"}})
     def test_connection_with_missing_connection_id(self):

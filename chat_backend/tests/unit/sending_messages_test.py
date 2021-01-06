@@ -65,7 +65,7 @@ class TestMessaging(unittest.TestCase):
         # Given: Broken api event
         broken_event = {'some': 'data'}
         # When: send message function is called with the invalid event
-        response = send_message(send_ev, "")
+        response = send_message(broken_event, "")
         # Then: 400 is returned
         self.assertEqual(response['statusCode'], 400)
 

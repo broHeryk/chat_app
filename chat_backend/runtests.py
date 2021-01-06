@@ -1,5 +1,5 @@
-import unittest
-from tests.unit import sending_messages_test, ws_connect_test
+import pytest
+
 
 if __name__ == '__main__':
-    unittest.discover()
+    pytest.main()

@@ -102,7 +102,7 @@ def validate_body(body):
     # Todo: to be filled in
     #body['content is needed']
     if not isinstance(body, dict):
-        pass
+        raise ValueError('Message body should be a valid dictionary')
         # logger.debug('Failed: message body not in dict format.')
 
     pass
